@@ -1,16 +1,16 @@
-# This is the PGM homework2 problem 2.
+# This is the PGM homework2
+``Emalgorithm.py''
+This algorithm is an EM Algorithm for Confounded Heterogenous Data
+		y \sim X\beta +Zu+\epsilon
+		u \sim N(0, I \sigma_u^2)
+		Y \sim N(X\beta, ZZ^T \epsilon_\sigma^2 + I \sigma_u^2)
+You can test it by python Emalgorithm_run.py
+
+
 
 ``GraphicalLass.py'' is based on the paper:
 		Sparse inverse covariance estimation with the graphical lasso
-You can run it by the following code(A is the percision matrix):
-	import numpy as np
-	import GraphicalLasso as GL
-	X = np.loadtxt('graph.csv',delimiter=',',dtype='float')
-	rho = 1e-5
-	gl=GL.GraphLasso(rho)
-	gl.fit(X)
-	print(gl.A)
-Or you can run it by python GraphicalLasso_run.py
+You can run it by python GraphicalLasso_run.py
 
 
 

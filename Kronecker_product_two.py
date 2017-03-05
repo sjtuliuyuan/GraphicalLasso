@@ -9,7 +9,7 @@ def get_GL_condition(c=0.1):
 						[2*c*c, c,    c,  1    ]])
 
 	# Kronecker product of Omega \kr Omega
-	KP=np.kron(Omega,Omega)
+	KP=np.kron(Omega,np.eye(4))+np.kron(np.eye(4),Omega)
 	# calculate S, it will be a list
 	edge_set = [[1,2],[2,1],[1,3],[3,1],[3,4],[4,3],[2,4],[4,2],[2,3],[3,2]]
 	Slist=[]
@@ -18,13 +18,13 @@ def get_GL_condition(c=0.1):
 	Slist.sort()
 	
 	# calculate (Omega \kr Omega)_{S,S}^{-1}
-	KP_SS_inverse=np.linalg.inv(KP[Slist,:][:,Slist])
+	KP_SS_inverse=np.linalg.inv(0.5*KP[Slist,:][:,Slist])
 
 	SC = {3,12}
 	val =[]
 	for e in SC:
 		KP_eS=KP[e,:][Slist]
-		val.append(np.sum(np.abs(KP_eS.dot(KP_SS_inverse))))
+		val.append(np.sum(np.abs(np.dot(0.5*KP_eS,KP_SS_inverse))))
 	return max(val)
 
 
@@ -42,7 +42,7 @@ plt.plot([0.01*x for x in range(0,max_c_position+2)], [1 for x in range(0,max_c_
 plt.plot([max_C for x in range(0,11)], [0.1*x for x in range(0,11)],'b')
 plt.axis([0, 0.5, 0, 2])
 plt.xlabel('c')
-plt.ylabel('max||(Omega \kr \Omega)_{eS} (Omega \kr \Omega)^{-1}_{S,S}||_1')
+plt.ylabel('max||Tau_{e,S} \kr Tau_{S,S}^{-1}||_1')
 plt.scatter([max_C,],[1,], 100, color ='g')
 plt.annotate(str(max_C),
          	xy=(max_C, 1), xycoords='data',

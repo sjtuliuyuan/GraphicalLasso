@@ -38,8 +38,8 @@ class GraphLasso:
         self.S=S
         W=S+self.rho*np.eye(self.X.shape[1])
         #initialize A, A is the precision matrix
-        #A = np.eye(X.shape[1])
-        A=np.linalg.pinv(S)
+        A = np.eye(X.shape[1])
+        #A=np.linalg.pinv(S)
 
         clf=linear_model.Lasso(alpha=self.rho)
         for i in range(self.maxItr):
