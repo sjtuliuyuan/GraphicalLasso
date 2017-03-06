@@ -11,7 +11,7 @@ def get_GL_condition(c=0.1):
 	# Kronecker product of Omega \kr Omega
 	KP=np.kron(Omega,Omega)
 	# calculate S, it will be a list
-	edge_set = [[1,2],[2,1],[1,3],[3,1],[3,4],[4,3],[2,4],[4,2],[2,3],[3,2]]
+	edge_set = [[1,2],[2,1],[1,3],[3,1],[3,4],[4,3],[2,4],[4,2],[2,3],[3,2],[1,1],[2,2],[3,3],[4,4]]
 	Slist=[]
 	for [a,b] in edge_set:
 		Slist.append((a-1)*Omega.shape[0]+(b-1))
