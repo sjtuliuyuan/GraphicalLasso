@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 
 def get_GL_condition(c=0.1):
 
-	Omega =  np.array([	[1,     c,    0,  2*c*c],
-						[c,     1,    c,  c	   ],
-						[0,     c,    1,  c    ],
+	Omega =  np.array([	[1,     c,    c,  2*c*c],
+						[c,     1,    0,  c	   ],
+						[c,     0,    1,  c    ],
 						[2*c*c, c,    c,  1    ]])
 
 	# Kronecker product of Omega \kr Omega
