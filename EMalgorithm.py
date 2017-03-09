@@ -29,11 +29,13 @@ class EM:
         self.beta = np.zeros((self.p, 1))
         self.sigma_u = 0.1
         self.sigma_epsilon = 0.1
-        self.history=[]
+        self.beta_history=[]
+        self.loglikelihood_history=[]
         for _ in xrange(0, self.maxItr):
         	u,utu = self.Estep()
         	self.Mstep(u,utu)
-        	self.history.append(self.beta)
+        	self.beta_history.append(self.beta)
+        	self.loglikelihood_history.append(self.get_loglikelihood(u,utu))
 
     def Estep(self):
     	#print("_____EStep______")
@@ -57,5 +59,13 @@ class EM:
     	self.sigma_epsilon = math.sqrt((temp.T.dot(temp))/self.n)
     	self.beta = np.linalg.pinv(self.X.T.dot(
     			self.X)).dot(self.X.T).dot(self.y-self.Z.dot(u))
+
+    def get_loglikelihood(self, u, utu):
+    	temp = self.y-self.X.dot(self.beta)-self.Z.dot(u) 
+    	LE = -self.n*math.log(self.sigma_epsilon)-self.q*math.log(self.sigma_u)\
+    			-temp.T.dot(temp)/(2*self.sigma_u**2)\
+    			-utu/(2*self.sigma_u**2)
+    	return float(LE)
+
 
 
