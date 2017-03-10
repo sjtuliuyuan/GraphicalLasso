@@ -1,3 +1,5 @@
+You can first view Question.pdf and hw2_YuanLiu.pdf to know the questions and answers.
+
 # This is the PGM homework2
 ``Emalgorithm.py''
 This algorithm is an EM Algorithm for Confounded Heterogenous Data
