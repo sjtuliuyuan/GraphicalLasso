@@ -1,95 +1,108 @@
-"""
-============================================================
-Graphical Lasso
-This algorithm is based on the paper :
-		Sparse inverse covariance estimation with the graphical lasso
-The get and put function in class GraphLasso is the tricky part.
-============================================================
-
-"""
-from sklearn import preprocessing
-from sklearn import linear_model
 import numpy as np
+import sklearn.covariance as sk
+from sklearn.linear_model import cd_fast
+from sklearn.utils.extmath import pinvh
+from sklearn.covariance import empirical_covariance
+from sklearn.utils.validation import check_random_state
+import matplotlib.pyplot as plt
 
 
-class GraphLasso:
-    # X is data (n_samples*n_features)
-    # A is precision matrix (n_features*n_features)
-    # S is covariance matrix (n_features*n_features)
-    # rho is regularizer
-    
-    # initialization
-    def __init__(self,X=None,A=None,S=None,rho=0.1,
-                 maxItr=100):
-        self.X=X   
-        self.rho=rho
-        self.maxItr=int(maxItr)
-        
-    # graphical lasso    
-    def fit(self,X):
-        n_samples,n_features=X.shape[0],X.shape[1]
-        
-        # remove the mean and scale to unit varince
-        scaler=preprocessing.StandardScaler().fit(X)
-        self.X=scaler.transform(X)
-        
-        #initialize S(empirical covariance) and W(estimated covariance)
-        S=self.X.T.dot(self.X)/n_samples
-        self.S=S
-        W=S+self.rho*np.eye(self.X.shape[1])
-        #initialize A, A is the precision matrix
-        A = np.eye(X.shape[1])
-        #A=np.linalg.pinv(S)
 
-        clf=linear_model.Lasso(alpha=self.rho)
-        for i in range(self.maxItr):
-            for j in range(n_features):
-            	#The get and put function in class GraphLasso is the tricky part.
-                W11,w12,w22=self.get(W)
-                S11,s12,s22=self.get(S)
-                A11,a12,a22=self.get(A)
+class GraphLasso():
+	def __init__(self,X=None,tol=1e-4, max_iter=100):
+		self.X=X   
+		self.tol = tol
+		self.max_iter=int(max_iter)
 
-                #calculate W11^{-1/2}            
-                U,D,V=np.linalg.svd(W11)
-                W11_half=U.dot(np.diag(np.sqrt(D)).dot(U.T))
-                
-                b=np.linalg.pinv(W11_half).dot(s12)
-                
-                # performs lasso  
-                beta=clf.fit(W11_half,b).coef_
-            
-                # find w12
-                w12=W11.dot(beta)
-                
-                #formula (13) (14) of the paper
-                a12=-beta/(w22-beta.T.dot(W11).dot(beta))
-                a22=1/(w22-beta.T.dot(W11).dot(beta))
-            
-                W=self.put(W11,w12,w22)
-                S=self.put(S11,s12,s22)
-                A=self.put(A11,a12,a22)
-        self.A=A
+	def fit(self, X, alpha):
+		self.alpha=alpha
+		emp_cov = empirical_covariance(X)
+		self.covariance_, self.precision_ = graph_lasso(
+            emp_cov, alpha=self.alpha, tol=self.tol, max_iter=self.max_iter)
+		return self.covariance_, self.precision_
 
-        return self
-             
-    def get(self,S):
-    	# S = | R    s  |
-    	#	  | s^T  sii|
-        end=S.shape[0]-1
-        R=S[:-1,:-1]
-        s=S[end,:-1]
-        sii=S[end][end]
-            
-        return [R,s,sii]
-    
-    def put(self,R,s,sii):
-    	#return X =	| sii  s^T |
-    	#         	| s    R   |	
-        n=R.shape[0]+1
-        X=np.empty([n,n])
-        X[1:,1:]=R
-        X[1:,0]=s
-        X[0,1:]=s
-        X[0][0]=sii
-        
-        return X
+def graph_lasso(emp_cov, alpha, tol=1e-4, max_iter=100):
+
+    _, n_features = emp_cov.shape    
+    covariance_ = emp_cov.copy()
+
+    covariance_ *= 0.95
+    diagonal = emp_cov.flat[::n_features + 1]
+    covariance_.flat[::n_features + 1] = diagonal
+    precision_ = pinvh(covariance_)
+
+    indices = np.arange(n_features)
+    eps=np.finfo(np.float64).eps
+
+    for i in range(max_iter):
+        for idx in range(n_features):
+            sub_covariance = np.ascontiguousarray(
+                    covariance_[indices != idx].T[indices != idx])
+            row = emp_cov[idx, indices != idx]
+
+            # Use coordinate descent
+            coefs = -(precision_[indices != idx, idx]
+                          / (precision_[idx, idx] + 1000 * eps))
+            coefs, _, _, _ = cd_fast.enet_coordinate_descent_gram(
+                            coefs, alpha, 0, sub_covariance, row, row,
+                            max_iter, tol, check_random_state(None), False)
+
+            # Update the precision matrix
+            precision_[idx, idx] = (
+                    1. / (covariance_[idx, idx]
+                          - np.dot(covariance_[indices != idx, idx], coefs)))
+            precision_[indices != idx, idx] = (- precision_[idx, idx]
+                                                   * coefs)
+            precision_[idx, indices != idx] = (- precision_[idx, idx]
+                                                   * coefs)
+            coefs = np.dot(sub_covariance, coefs)
+            covariance_[idx, indices != idx] = coefs
+            covariance_[indices != idx, idx] = coefs
+    return covariance_, precision_
+
+
+def get_precision_recall():
+	golden_percision = np.array([[1,1,1,0],
+							[1,1,1,1],
+							[1,1,1,1],
+							[0,1,1,1]])
+
+	X = np.loadtxt('graph.csv',delimiter=',',dtype='float')
+	gl = GraphLasso(tol=1e-10,max_iter=100)
+
+	alpha_set=[1e-5,1e-4,1e-4,1e-2,1e-1]
+	recall_list = []
+	precision_list = []
+	for alpha in alpha_set:
+		covariance_, precision_ = gl.fit(X,alpha= alpha)
+		print("Precision Matrix")
+		print(precision_)
+
+		TPFP = len(np.nonzero(precision_)[0])
+		TP = len(np.nonzero(np.multiply(precision_, golden_percision))[0])
+		pre = float(TP)/TPFP
+		TPFN = len(np.nonzero(golden_percision)[0])
+		recall = float(TP)/TPFN
+		print("Precision")
+		print(pre)
+		print("Recall")
+		print(recall)
+		precision_list.append(pre)
+		recall_list.append(recall)
+	return precision_list, recall_list
+
+def plot_picture(precision_list, recall_list):
+	line1, = plt.semilogx([1e-5,1e-4,1e-4,1e-2,1e-1],precision_list, 'r',label='precision')
+	line2, = plt.semilogx([1e-5,1e-4,1e-4,1e-2,1e-1],recall_list,'b',label='recall')
+	plt.axis([0, 0.1, 0, 1.2])
+	first_legend = plt.legend(handles=[line1,line2], loc=1)
+	ax = plt.gca().add_artist(first_legend)
+	plt.xlabel('lambda')
+	plt.title("Precision and Recall")
+	plt.show()
+
+
+
+precision_list, recall_list = get_precision_recall()
+plot_picture(precision_list, recall_list)
+

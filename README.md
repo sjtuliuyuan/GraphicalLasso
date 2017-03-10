@@ -6,11 +6,11 @@ This algorithm is an EM Algorithm for Confounded Heterogenous Data
 		Y \sim N(X\beta, ZZ^T \epsilon_\sigma^2 + I \sigma_u^2)
 You can test it by python Emalgorithm_run.py
 
-
+``GoWild'' is the code for problem1.3
 
 ``GraphicalLass.py'' is based on the paper:
 		Sparse inverse covariance estimation with the graphical lasso
-You can run it by python GraphicalLasso_run.py
+You can run it by python GraphicalLasso.py
 
 
 

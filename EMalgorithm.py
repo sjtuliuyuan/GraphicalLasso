@@ -31,9 +31,11 @@ class EM:
         self.sigma_epsilon = 0.1
         self.beta_history=[]
         self.loglikelihood_history=[]
+        self.sigma_epsilon_history=[]
         for _ in xrange(0, self.maxItr):
         	u,utu = self.Estep()
         	self.Mstep(u,utu)
+        	self.sigma_epsilon_history.append(self.sigma_epsilon)
         	self.beta_history.append(self.beta)
         	self.loglikelihood_history.append(self.get_loglikelihood(u,utu))
 
